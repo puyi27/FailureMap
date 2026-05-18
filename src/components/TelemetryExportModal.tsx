@@ -192,7 +192,7 @@ export const TelemetryExportModal = () => {
     const [calendarViewDate, setCalendarViewDate] = useState(new Date());
 
     const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
-    const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+    const selectedTypes: string[] = [];
     const [selectedCities, setSelectedCities] = useState<string[]>([]);
     const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
     const [exportFormat, setExportFormat] = useState<'csv' | 'json'>('csv');
@@ -219,7 +219,6 @@ export const TelemetryExportModal = () => {
     const t = useMemo(() => TRANSLATIONS[lang], [lang]);
 
     const availableCompanies = useMemo(() => Array.from(new Set(apiData.map((d: any) => d.company).filter(Boolean))) as string[], [apiData]);
-    const availableTypes = useMemo(() => Array.from(new Set(apiData.map((d: any) => d.type).filter(Boolean))) as string[], [apiData]);
     const availableCities = useMemo(() => Array.from(new Set(apiData.map((d: any) => d.region).filter(Boolean))) as string[], [apiData]);
     const availableStatuses = ['HEALTHY', 'WARNING', 'CRITICAL', 'REPAIRING'];
 

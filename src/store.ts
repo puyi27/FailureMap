@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export const useDashboardStore = create<any>((set, get) => ({
+export const useDashboardStore = create<any>((set) => ({
     apiData: [],
     worldData: null,
     searchQuery: '',

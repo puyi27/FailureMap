@@ -35,7 +35,7 @@ export const DetailsPanel = () => {
   const setSelectedPoint = useDashboardStore((s: any) => s.setSelectedPoint);
   const resolveDevice = useDashboardStore((s: any) => s.resolveDevice);
   const repairDevice = useDashboardStore((s: any) => s.repairDevice);
-  const { isExportModalOpen, setIsExportModalOpen, apiData } = useDashboardStore();
+  const setIsExportModalOpen = useDashboardStore((s: any) => s.setIsExportModalOpen);
   const [pieHover, setPieHover] = useState<any>(null);
 
   const stats = useMemo(() => {

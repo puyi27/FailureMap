@@ -44,7 +44,7 @@ export const BaseMap = () => {
 
     if (isLocal) {
       // Use Socket.io in local development for live push updates
-      const socket = initializeSocket();
+      initializeSocket();
       return () => {
         disconnectSocket();
       };

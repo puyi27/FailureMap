@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
+    },
+    {
+      "src": "server/server.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/cron/simulate-ping",
+      "dest": "server/server.ts",
+      "headers": { "Cache-Control": "no-cache" }
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "server/server.ts"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/simulate-ping",
+      "schedule": "*/1 * * * *"
+    }
+  ]
+}

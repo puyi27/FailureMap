@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useDashboardStore } from '../store';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
@@ -56,8 +56,37 @@ export const ControlsBar = () => {
     const setSearchQuery = useDashboardStore((state: any) => state.setSearchQuery);
     const apiData = useDashboardStore((state: any) => state.apiData) || [];
     const setSelectedPoint = useDashboardStore((state: any) => state.setSelectedPoint);
-    const setSelectedCity = useDashboardStore((state: any) => state.setSelectedCity);
+    const setSelectedCoordinate = useDashboardStore((state: any) => state.setSelectedCoordinate);
     const setIsExportModalOpen = useDashboardStore((state: any) => state.setIsExportModalOpen);
+
+    const [externalCities, setExternalCities] = useState<any[]>([]);
+
+    useEffect(() => {
+        const q = searchQuery.trim();
+        if (q.length < 3) {
+            setExternalCities([]);
+            return;
+        }
+
+        const delayDebounceFn = setTimeout(() => {
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=3&featuretype=settlement&q=${encodeURIComponent(q)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        const mapped = data.map((item: any) => ({
+                            name: item.display_name.split(',')[0],
+                            fullName: item.display_name,
+                            lat: Number(item.lat),
+                            lng: Number(item.lon)
+                        }));
+                        setExternalCities(mapped);
+                    }
+                })
+                .catch(() => {});
+        }, 500);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchQuery]);
 
     const companies = ['All', ...new Set(apiData.map((d: any) => d.company).filter(Boolean))];
     const types = ['All', 'Gateway', 'Sensor', 'Actuator', 'Camera'];
@@ -112,19 +141,24 @@ export const ControlsBar = () => {
                     )}
                 </div>
 
-                {((searchResults.length > 0) || (matchingCities.length > 0)) && (
-                    <div className="absolute top-[calc(100%+8px)] left-0 w-full sm:w-[280px] bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-100 overflow-hidden flex flex-col z-[150] p-1.5 gap-1">
+                {((searchResults.length > 0) || (matchingCities.length > 0) || (externalCities.length > 0)) && (
+                    <div className="absolute top-[calc(100%+8px)] left-0 w-full sm:w-[280px] bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-100 overflow-hidden flex flex-col z-[150] p-1.5 gap-1 max-h-[350px] overflow-y-auto">
                         
                         {matchingCities.length > 0 && (
                             <div className="flex flex-col border-b border-slate-100 pb-1.5 last:border-0 last:pb-0">
-                                <span className="px-2.5 py-1 text-[8px] font-black tracking-widest text-slate-400 uppercase">Cities</span>
+                                <span className="px-2.5 py-1 text-[8px] font-black tracking-widest text-slate-400 uppercase">Active Hubs</span>
                                 {matchingCities.map((cityName: string) => {
                                     const nodeCount = apiData.filter((d: any) => d.region === cityName).length;
                                     return (
                                         <div 
                                             key={cityName} 
                                             onClick={() => {
-                                                setSelectedCity(cityName);
+                                                const cityDevices = apiData.filter((d: any) => d.region === cityName);
+                                                if (cityDevices.length > 0) {
+                                                    const avgLat = cityDevices.reduce((sum: number, d: any) => sum + Number(d.lat), 0) / cityDevices.length;
+                                                    const avgLng = cityDevices.reduce((sum: number, d: any) => sum + Number(d.lng), 0) / cityDevices.length;
+                                                    setSelectedCoordinate({ lat: avgLat, lng: avgLng, name: cityName });
+                                                }
                                                 setSearchQuery('');
                                             }} 
                                             className="px-2.5 py-2 hover:bg-blue-50/50 hover:text-blue-700 cursor-pointer rounded-xl flex items-center gap-2 group transition-colors"
@@ -137,6 +171,28 @@ export const ControlsBar = () => {
                                         </div>
                                     );
                                 })}
+                            </div>
+                        )}
+
+                        {externalCities.length > 0 && (
+                            <div className="flex flex-col border-b border-slate-100 pb-1.5 last:border-0 last:pb-0">
+                                <span className="px-2.5 py-1 text-[8px] font-black tracking-widest text-slate-400 uppercase">Global Locations</span>
+                                {externalCities.map((city: any) => (
+                                    <div 
+                                        key={city.fullName} 
+                                        onClick={() => {
+                                            setSelectedCoordinate({ lat: city.lat, lng: city.lng, name: city.name });
+                                            setSearchQuery('');
+                                        }} 
+                                        className="px-2.5 py-2 hover:bg-blue-50/50 hover:text-blue-700 cursor-pointer rounded-xl flex items-center gap-2 group transition-colors"
+                                    >
+                                        <LocationOnIcon className="text-slate-400 group-hover:text-blue-500 transition-colors" style={{ fontSize: 14 }} />
+                                        <div className="flex flex-col max-w-[210px]">
+                                            <span className="text-[10px] font-black text-slate-800 group-hover:text-blue-900 truncate">{city.name}</span>
+                                            <span className="text-[8px] font-bold text-slate-400 group-hover:text-blue-500 truncate">{city.fullName.split(',').slice(1).join(',').trim()}</span>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         )}
                         

@@ -25,8 +25,8 @@ export const D3Map = () => {
   const worldData = useDashboardStore(state => state.worldData);
   const selectedPoint = useDashboardStore(state => state.selectedPoint);
   const setSelectedPoint = useDashboardStore(state => state.setSelectedPoint);
-  const selectedCity = useDashboardStore(state => state.selectedCity);
-  const setSelectedCity = useDashboardStore(state => state.setSelectedCity);
+  const selectedCoordinate = useDashboardStore(state => state.selectedCoordinate);
+  const setSelectedCoordinate = useDashboardStore(state => state.setSelectedCoordinate);
 
   const mapRef = useRef<any>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -69,25 +69,19 @@ export const D3Map = () => {
   }, [selectedPoint]);
 
   useEffect(() => {
-    if (selectedCity && mapRef.current && apiData.length > 0) {
-      const cityDevices = apiData.filter((d: any) => d.region?.toLowerCase() === selectedCity.toLowerCase());
-      if (cityDevices.length > 0) {
-        const avgLat = cityDevices.reduce((sum: number, d: any) => sum + Number(d.lat), 0) / cityDevices.length;
-        const avgLng = cityDevices.reduce((sum: number, d: any) => sum + Number(d.lng), 0) / cityDevices.length;
-        
-        mapRef.current.getMap().flyTo({
-          center: [avgLng, avgLat],
-          zoom: 12.2,
-          pitch: 25,
-          bearing: 0,
-          duration: 3000,
-          essential: true
-        });
-        
-        setSelectedCity(null);
-      }
+    if (selectedCoordinate && mapRef.current) {
+      mapRef.current.getMap().flyTo({
+        center: [selectedCoordinate.lng, selectedCoordinate.lat],
+        zoom: 12.2,
+        pitch: 25,
+        bearing: 0,
+        duration: 3000,
+        essential: true
+      });
+      
+      setSelectedCoordinate(null);
     }
-  }, [selectedCity, apiData, setSelectedCity]);
+  }, [selectedCoordinate, setSelectedCoordinate]);
 
   const points = useMemo(() => {
     let d: any[] = apiData || [];

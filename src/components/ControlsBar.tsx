@@ -62,7 +62,8 @@ export const ControlsBar = () => {
 
     const searchResults = searchQuery.trim() ? apiData.filter((d: any) =>
         (d.deviceId && d.deviceId.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (d.info && d.info.toLowerCase().includes(searchQuery.toLowerCase()))
+        (d.info && d.info.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (d.region && d.region.toLowerCase().includes(searchQuery.toLowerCase()))
     ).slice(0, 5) : [];
 
     const continentOptions = [
@@ -110,7 +111,7 @@ export const ControlsBar = () => {
                         {searchResults.map((device: any) => (
                             <div key={device.deviceId} onClick={() => { setSelectedPoint(device); setSearchQuery(''); }} className="px-3 py-2.5 hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-0 flex flex-col">
                                 <span className="text-[11px] font-black text-slate-800">{device.info || 'Device'}</span>
-                                <span className="text-[9px] font-bold text-slate-400">{device.deviceId} • {device.lastStatus}</span>
+                                <span className="text-[9px] font-bold text-slate-400">{device.deviceId} • {device.region} • {device.lastStatus}</span>
                             </div>
                         ))}
                     </div>

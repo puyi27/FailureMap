@@ -75,7 +75,11 @@ export const D3Map = () => {
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      d = d.filter((item: any) => item.deviceId?.toLowerCase().includes(q) || (item.info && item.info.toLowerCase().includes(q)));
+      d = d.filter((item: any) => 
+        item.deviceId?.toLowerCase().includes(q) || 
+        (item.info && item.info.toLowerCase().includes(q)) ||
+        (item.region && item.region.toLowerCase().includes(q))
+      );
     }
 
     return d.map((device: any) => ({

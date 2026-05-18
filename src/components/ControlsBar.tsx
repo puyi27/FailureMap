@@ -7,6 +7,7 @@ import RouterIcon from '@mui/icons-material/Router';
 import PublicIcon from '@mui/icons-material/Public';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
 
 const CustomSelect = ({ value, options, onChange, icon, defaultLabel }: any) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -55,15 +56,20 @@ export const ControlsBar = () => {
     const setSearchQuery = useDashboardStore((state: any) => state.setSearchQuery);
     const apiData = useDashboardStore((state: any) => state.apiData) || [];
     const setSelectedPoint = useDashboardStore((state: any) => state.setSelectedPoint);
+    const setSelectedCity = useDashboardStore((state: any) => state.setSelectedCity);
     const setIsExportModalOpen = useDashboardStore((state: any) => state.setIsExportModalOpen);
 
     const companies = ['All', ...new Set(apiData.map((d: any) => d.company).filter(Boolean))];
     const types = ['All', 'Gateway', 'Sensor', 'Actuator', 'Camera'];
 
+    const allCities = Array.from(new Set(apiData.map((d: any) => d.region).filter(Boolean))) as string[];
+    const matchingCities = searchQuery.trim() ? allCities.filter(city => 
+        city.toLowerCase().includes(searchQuery.toLowerCase())
+    ).slice(0, 3) : [];
+
     const searchResults = searchQuery.trim() ? apiData.filter((d: any) =>
         (d.deviceId && d.deviceId.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (d.info && d.info.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (d.region && d.region.toLowerCase().includes(searchQuery.toLowerCase()))
+        (d.info && d.info.toLowerCase().includes(searchQuery.toLowerCase()))
     ).slice(0, 5) : [];
 
     const continentOptions = [
@@ -106,14 +112,53 @@ export const ControlsBar = () => {
                     )}
                 </div>
 
-                {searchResults.length > 0 && (
-                    <div className="absolute top-[calc(100%+8px)] left-0 w-full sm:w-[280px] bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-100 overflow-hidden flex flex-col z-[150]">
-                        {searchResults.map((device: any) => (
-                            <div key={device.deviceId} onClick={() => { setSelectedPoint(device); setSearchQuery(''); }} className="px-3 py-2.5 hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-0 flex flex-col">
-                                <span className="text-[11px] font-black text-slate-800">{device.info || 'Device'}</span>
-                                <span className="text-[9px] font-bold text-slate-400">{device.deviceId} • {device.region} • {device.lastStatus}</span>
+                {((searchResults.length > 0) || (matchingCities.length > 0)) && (
+                    <div className="absolute top-[calc(100%+8px)] left-0 w-full sm:w-[280px] bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-100 overflow-hidden flex flex-col z-[150] p-1.5 gap-1">
+                        
+                        {matchingCities.length > 0 && (
+                            <div className="flex flex-col border-b border-slate-100 pb-1.5 last:border-0 last:pb-0">
+                                <span className="px-2.5 py-1 text-[8px] font-black tracking-widest text-slate-400 uppercase">Cities</span>
+                                {matchingCities.map((cityName: string) => {
+                                    const nodeCount = apiData.filter((d: any) => d.region === cityName).length;
+                                    return (
+                                        <div 
+                                            key={cityName} 
+                                            onClick={() => {
+                                                setSelectedCity(cityName);
+                                                setSearchQuery('');
+                                            }} 
+                                            className="px-2.5 py-2 hover:bg-blue-50/50 hover:text-blue-700 cursor-pointer rounded-xl flex items-center gap-2 group transition-colors"
+                                        >
+                                            <LocationOnIcon className="text-slate-400 group-hover:text-blue-500 transition-colors" style={{ fontSize: 14 }} />
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-black text-slate-800 group-hover:text-blue-900">{cityName}</span>
+                                                <span className="text-[8px] font-bold text-slate-400 group-hover:text-blue-500">{nodeCount} active telemetry nodes</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
-                        ))}
+                        )}
+                        
+                        {searchResults.length > 0 && (
+                            <div className="flex flex-col pt-1">
+                                <span className="px-2.5 py-1 text-[8px] font-black tracking-widest text-slate-400 uppercase">Devices</span>
+                                {searchResults.map((device: any) => (
+                                    <div 
+                                        key={device.deviceId} 
+                                        onClick={() => { 
+                                            setSelectedPoint(device); 
+                                            setSearchQuery(''); 
+                                        }} 
+                                        className="px-2.5 py-2 hover:bg-slate-50 cursor-pointer rounded-xl flex flex-col transition-colors border-b border-slate-50 last:border-0"
+                                    >
+                                        <span className="text-[10px] font-black text-slate-800">{device.info || 'Device'}</span>
+                                        <span className="text-[8px] font-bold text-slate-400">{device.deviceId} • {device.region} • {device.lastStatus}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
                     </div>
                 )}
             </div>

@@ -5,6 +5,8 @@ export const useDashboardStore = create<any>((set) => ({
     worldData: null,
     searchQuery: '',
     selectedPoint: null,
+    selectedCity: null,
+    setSelectedCity: (city: string | null) => set({ selectedCity: city }),
     isExportModalOpen: false, // <-- Estado del modal
     filters: {
         continent: 'All',

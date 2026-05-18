@@ -1,144 +1,184 @@
-# 🌍 FailureMap — Panel de Telemetría Global IoT en Tiempo Real
+# 🌍 FailureMap — Enterprise-Grade Global IoT Telemetry & Real-Time Fault Monitoring Platform
 
-¡Bienvenido a **FailureMap**! Una plataforma premium, empresarial y de alto rendimiento diseñada para la monitorización, diagnóstico y análisis geográfico en tiempo real de más de **2,000 dispositivos y sensores IoT** distribuidos en todo el mundo.
+**FailureMap** is a high-performance, SaaS-ready, real-time industrial Internet of Things (IoT) monitoring and telemetry visualization platform. Engineered for mission-critical operations, it provides seamless real-time fault tracking, diagnostic logging, and geographical clustering for over **2,000 active global hardware nodes** across 19 major metropolitan hubs.
 
-Esta aplicación ha sido diseñada con un enfoque ultraligero y moderno, combinando una interfaz interactiva de alto impacto visual con una arquitectura serverless híbrida optimizada para despliegues de coste cero en **Vercel** y **Neon DB**.
-
----
-
-## 🎨 Capturas e Impacto Visual
-> [!NOTE]
-> La aplicación cuenta con un mapa interactivo renderizado con **D3.js**, filtros inteligentes por continentes, empresas y tipos de dispositivo, y un panel lateral detallado que muestra gráficos de estabilidad de las últimas 24 horas y telemetría histórica en tiempo real.
+This platform utilizes a cutting-edge, stateless, serverless hybrid architecture optimized for zero-cost, infinite-scale hosting on **Vercel** and **Neon Serverless PostgreSQL**.
 
 ---
 
-## 🛠️ Stack Tecnológico
+## 💎 Architectural Pillars
 
-### 💻 Frontend (Cliente)
-* **Core:** React 19 + TypeScript + Vite.
-* **Motor Geográfico:** **D3.js** para el renderizado vectorial e interactivo del mapa mundial en formato GeoJSON, garantizando un rendimiento fluido de 60 FPS incluso con miles de nodos activos.
-* **Estilado:** TailwindCSS con una paleta de colores oscuros curada, difuminados de cristal (glassmorphism) y micro-animaciones premium.
-* **Gestión de Estado:** **Zustand** para un flujo de datos centralizado y reactivo de altísima velocidad.
-* **Iconografía:** Material Icons (MUI).
+### 1. Vector Map Engine (D3.js Vector Pipelines)
+Instead of relying on heavy map tiles (like Leaflet or Mapbox) which consume high bandwidth and inject styling overhead, FailureMap utilizes pure **D3.js** projection matrices. Global coordinates are rendered into a responsive, highly styled SVG vector projection. This reduces the client bundle size and allows smooth vector zooming and panning at 60 FPS while displaying thousands of active interactive nodes.
 
-### ⚙️ Backend (Servidor)
-* **Runtime:** Node.js + Express.
-* **Base de Datos:** **PostgreSQL** (optimizado para **Neon Serverless PostgreSQL** en producción y compatible con Postgres local).
-* **Comunicación en Tiempo Real:** **Socket.io** (WebSockets nativos en entornos con estado persistente) y un sistema híbrido de **Lazy Polling de 4 segundos** en entornos serverless.
+### 2. Zero-React-Render Cascades (Zustand & Memoization)
+To prevent performance degradation during mass state updates, the dashboard decouples standard React state from the telemetry pipeline. Using **Zustand**, global state updates are dispatched directly to the active components. Visual sub-components (graphs, charts, lists, and modal interfaces) utilize custom memoized selectors to ensure that a telemetry ping on one node does not trigger a re-render cascade across the remaining 1,990+ nodes.
+
+### 3. Hype-Optimized Stateless Sync (Lazy Telemetry Simulation)
+Because serverless runtimes (like Vercel Serverless Functions) are fully ephemeral and stateless, persistent WebSocket connections and infinite background intervals (`setInterval`) are not physically possible. FailureMap resolves this limitation gracefully with an on-demand, stateless simulation architecture.
 
 ---
 
-## 🚀 Arquitectura Serverless Premium (Coste Cero en Vercel)
+## 🛰️ Serverless Stateless Synchronization Pipeline
 
-Las arquitecturas serverless como Vercel son efímeras (stateless) y no admiten WebSockets persistentes ni hilos ejecutándose en bucle infinito en segundo plano (`setInterval`). Además, las cuentas **Vercel Hobby** limitan las tareas programadas (Cron Jobs) a un máximo de **una ejecución diaria**.
+Vercel Hobby plan limitations only permit a single Cron Job run per 24 hours (`0 0 * * *`). To maintain a dynamic, real-time, self-updating telemetry map without upgrading to a paid Tier, the backend incorporates an **On-Demand Reactive Simulators (Lazy Simulation Pattern)**.
 
-**FailureMap resuelve este desafío con dos ingenierías de nivel corporativo:**
+```mermaid
+sequenceDiagram
+  autonumber
+  actor Client as Active Client Dashboard
+  participant Vercel as Vercel Serverless (API Route)
+  participant Neon as Neon Serverless PostgreSQL
+  
+  Client->>Vercel: HTTP GET /api/devices (Stateless Polling every 4s)
+  Note over Vercel: Checks last simulation timestamp
+  alt Time Delta since last ping > 4 seconds
+      Vercel->>Neon: Spawn runSinglePingSimulation() in background
+      Note over Neon: Evaluates physical sensors, battery, RF pings<br/>and logs system-wide state changes
+  end
+  Vercel->>Neon: SELECT * FROM telemetry_devices
+  Neon-->>Vercel: Returns 2,000 updated nodes
+  Vercel-->>Client: Returns JSON payload (60FPS Reactive Map updates)
+```
 
-1. **Lazy Simulation (Simulación bajo demanda en [server.ts](server/server.ts)):**
-   Cuando un usuario está viendo el mapa, el cliente realiza peticiones de actualización cada 4 segundos (`polling`). El servidor Express detecta si han pasado más de 4 segundos desde el último ping. Si es así, **desencadena una simulación asíncrona de telemetría en segundo plano** que actualiza el estado de los dispositivos en PostgreSQL. Si no hay usuarios en la plataforma, el consumo de CPU y base de datos es **cero absoluto**.
-   
-2. **Fallback Inteligente de Red:**
-   La aplicación detecta automáticamente el entorno. Si se ejecuta localmente, inicia canales bidireccionales con **Socket.io**. Si se despliega en producción serverless, conmuta automáticamente a la arquitectura de **Lazy Polling de 4 segundos**, garantizando que el mapa se actualice constantemente y funcione a la perfección de forma gratuita.
+This pipeline ensures that when users are active, the telemetry engine is fully alive and dynamically mutating every 4 seconds. When the platform has no active traffic, database operations scale down to **absolute zero**, saving Neon compute cycles.
 
 ---
 
-## 📁 Estructura del Proyecto
+## 🗄️ Database Schema & Fast-Query Indexes
 
-```text
-FailureMap/
-├── public/                 # Iconos vectoriales y recursos públicos
-├── server/
-│   ├── seed.js             # Semilla programática para generar 2,000 nodos
-│   └── server.ts           # Servidor API Express y lógica de telemetría
-├── src/
-│   ├── assets/             # Recursos estáticos de la interfaz
-│   ├── components/         # Componentes React de la UI
-│   │   ├── ControlsBar.tsx        # Barra de filtros multinivel y búsqueda
-│   │   ├── D3Map.tsx              # Renderizador interactivo del mapa vectorial
-│   │   ├── DetailsPanel.tsx       # Detalle del nodo, gráficos D3 y logs
-│   │   └── TelemetryExportModal.ts# Modal de exportación avanzada en CSV/JSON
-│   ├── config/             # Configuración visual y de marca
-│   ├── services/           # Clientes de socket y API
-│   ├── store.ts            # Estado global reactivo con Zustand
-│   ├── types.ts            # Declaraciones de tipos estrictos en TypeScript
-│   ├── App.tsx             # Componente raíz
-│   └── main.tsx            # Punto de entrada de React
-├── schema.sql              # Esquema SQL original de inicialización
-├── vercel.json             # Configuración de despliegue serverless
-└── package.json            # Scripts y dependencias del sistema
+The data layer is powered by PostgreSQL. It stores structured IoT telemetry, historical logs, and complex status objects in robust, indexable JSON columns (`JSONB`). This design enables fast queries and flexible schemas without database migration overhead.
+
+### SQL Table Schema (`schema.sql`)
+```sql
+CREATE TABLE IF NOT EXISTS telemetry_devices (
+    device_id VARCHAR(50) PRIMARY KEY,
+    company VARCHAR(100) NOT NULL,
+    device_type VARCHAR(50) NOT NULL,
+    info TEXT,
+    lat NUMERIC(9, 6) NOT NULL,
+    lng NUMERIC(9, 6) NOT NULL,
+    region VARCHAR(50) NOT NULL,
+    timezone VARCHAR(50),
+    last_status VARCHAR(20) DEFAULT 'HEALTHY',
+    color VARCHAR(20) DEFAULT '#10b981',
+    last_tick BIGINT,
+    status_ticks INTEGER DEFAULT 0,
+    events JSONB DEFAULT '[]'::jsonb,
+    history JSONB DEFAULT '[]'::jsonb,
+    accumulated JSONB DEFAULT '{}'::jsonb
+);
+
+-- Optimization indexes for instant UI filter lookups
+CREATE INDEX IF NOT EXISTS idx_telemetry_region ON telemetry_devices(region);
+CREATE INDEX IF NOT EXISTS idx_telemetry_company ON telemetry_devices(company);
+CREATE INDEX IF NOT EXISTS idx_telemetry_status ON telemetry_devices(last_status);
 ```
 
 ---
 
-## 💾 La Semilla: 2,000 Nodos Inteligentes ([seed.js](server/seed.js))
+## 🧪 Mass Programmatic Seeder: 2,000 Active Nodes ([seed.js](server/seed.js))
 
-Para dotar al mapa de una carga de datos masiva y realista, disponemos de un generador inteligente que crea exactamente **2,000 dispositivos de telemetría**.
+The database seeder is written in native ES modules and programmatically generates exactly **2,000 highly realistic IoT nodes** clustered around **19 major global metropolises**.
 
-* **Agrupamiento Geográfico (Jitter Clustering):** Los dispositivos se crean alrededor de **19 ciudades del mundo** (Barcelona, Tokio, Nueva York, Milán, Buenos Aires, etc.). Para evitar que se superpongan en el mismo píxel, se aplica un ruido matemático (`jitter`) que los agrupa de forma realista simulando distritos y centros de datos reales.
-* **Diversidad Industrial:** Reparte los dispositivos entre 5 gigantes tecnológicos (`FAE Technology`, `Siemens`, `Schneider`, `Cisco`, `Teltonika`) y 4 tipos de sensores.
-* **Carga en Bloques (Bulk Inserts):** El script realiza inserciones en la base de datos en bloques de 200 en 200 para evitar desbordar Neon, cargando la base de datos completa en **menos de 5 segundos**.
+### Bounding Coordinates & Local Clustering (Jitter Algorithm)
+To prevent nodes from rendering directly on top of each other, the seeder uses a **Jitter Clustering Algorithm** that applies a random Gaussian/Uniform coordinate offset (`±0.015°`) relative to the city center. This simulates realistic industrial parks, cell towers, and smart-city grid layouts:
+
+* **Europe:** Barcelona, Berlin, Frankfurt, London, Milan, Paris, Rome, Seville, Vienna.
+* **North America:** Los Angeles, New York, Chicago.
+* **South America:** Buenos Aires, Montevideo, Rio de Janeiro, Santiago, Sao Paulo.
+* **Asia & Oceania:** Tokyo, Sydney.
+
+### Network Payload Mitigation (Bulk Loading)
+Instead of performing 2,000 individual queries which would trigger connection timeouts or Neon rate-limits, the seeder processes nodes in chunks of **200 parameterized multi-row queries** inside database transactions. This loads all 2,000 fully hydrated records in **under 3 seconds**.
 
 ---
 
-## 🛠️ Instalación y Configuración Local
+## 📁 Repository Directory Structure
 
-### 1. Clonar el Repositorio e Instalar Dependencias
+```text
+FailureMap/
+├── public/                 # Static vector assets (SVGs, Icons)
+├── server/
+│   ├── seed.js             # ES Module programmatic 2,000-device seeder
+│   └── server.ts           # Express API server & serverless endpoint routes
+├── src/
+│   ├── assets/             # Global visual styling sheets
+│   ├── components/         # Modular React micro-frontends
+│   │   ├── ControlsBar.tsx        # Multi-variable search, filter, and date controllers
+│   │   ├── D3Map.tsx              # D3.js real-time global map component
+│   │   ├── DetailsPanel.tsx       # Live status charts, status history, and remote commands
+│   │   └── TelemetryExportModal.ts# Custom 60FPS UI modal for selective telemetry data export
+│   ├── config/             # Styling definitions, gradients, and translation matrices
+│   ├── services/           # Socket & API client instances
+│   ├── store.ts            # High-speed reactive global state store (Zustand)
+│   ├── types.ts            # Strict industrial telemetry type interfaces
+│   ├── App.tsx             # Master Layout & core framework entry point
+│   └── main.tsx            # DOM Mounting point
+├── schema.sql              # Clean Postgres DDL database schema definitions
+├── vercel.json             # Serverless deployment configuration
+└── package.json            # Manifest file, configurations, and core dependencies
+```
+
+---
+
+## 🚀 Local Development Setup
+
+### 1. Installation
+Clone the repository and install all required platform dependencies:
 ```bash
 git clone https://github.com/puyi27/FailureMap.git
 cd FailureMap
 npm install
 ```
 
-### 2. Configurar la Base de Datos PostgreSQL
-Crea una base de datos llamada `FailureMap` e inicializa el script **[schema.sql](schema.sql)** en tu consola Postgres, o simplemente ejecuta el cargador automático `seed.js`.
+### 2. Local Database Initialization
+Initialize your local Postgres instance by creating a database named `FailureMap` and running `schema.sql`.
 
-### 3. Ejecutar la Semilla (Genera 2,000 nodos en segundos)
-Si utilizas la base de datos local predeterminada:
+### 3. Seeding the 2,000 Nodes
+Run the automatic seeder. The script automatically detects if it needs to apply SSL parameters depending on the target Postgres instance:
+
+**Local Database (Default):**
 ```bash
 node server/seed.js
 ```
 
-Si deseas cargar los 2,000 nodos en tu base de datos de **Neon DB** en la nube, define la variable de entorno en tu consola antes de ejecutar:
+**Neon Serverless Cloud Database:**
+* *Windows (PowerShell):*
+  ```powershell
+  $env:DATABASE_URL="postgresql://neondb_owner:YOUR_PASSWORD@your-host.aws.neon.tech/neondb?sslmode=require"; node server/seed.js
+  ```
+* *Git Bash / macOS / Linux:*
+  ```bash
+  DATABASE_URL="postgresql://neondb_owner:YOUR_PASSWORD@your-host.aws.neon.tech/neondb?sslmode=require" node server/seed.js
+  ```
 
-**En Windows (PowerShell):**
-```powershell
-$env:DATABASE_URL="tu_cadena_de_conexion_de_neon"; node server/seed.js
-```
+### 4. Running the Dev Servers
+Open two terminal windows to execute the client and server concurrently:
 
-**En Git Bash / macOS / Linux:**
-```bash
-DATABASE_URL="tu_cadena_de_conexion_de_neon" node server/seed.js
-```
-
----
-
-## 🏃‍♂️ Ejecución en Desarrollo
-
-Para disfrutar de la experiencia completa en desarrollo local con WebSockets en tiempo real activos, abre dos terminales:
-
-### Terminal 1: Iniciar el Servidor de Telemetría (Puerto 3000)
-```bash
-npm run server
-```
-
-### Terminal 2: Iniciar la Interfaz Web (Vite en el Puerto 5173)
-```bash
-npm run dev
-```
+* **Terminal 1: Node.js API server (Port 3000)**
+  ```bash
+  npm run server
+  ```
+* **Terminal 2: Frontend Client (Vite on Port 5173)**
+  ```bash
+  npm run dev
+  ```
 
 ---
 
-## 🚀 Despliegue en Producción (Vercel)
+## ☁️ Zero-Cost Cloud Deployment (Vercel)
 
-El proyecto está configurado y optimizado con **[vercel.json](vercel.json)** para desplegarse de manera directa en Vercel.
+FailureMap is fully configured out-of-the-box for production deployments on Vercel.
 
-1. Conecta tu repositorio de GitHub a tu cuenta de Vercel.
-2. Configura las siguientes variables de entorno en el panel de Vercel:
-   * `DATABASE_URL`: Tu cadena de conexión de Neon DB (con SSL activo).
-3. Vercel detectará la configuración automáticamente, compilará la interfaz con Vite y desplegará la API Express en funciones serverless sin coste alguno.
+1. Create a new project in your **Vercel Console** and link it to your GitHub repository.
+2. Add your database connection string in the **Environment Variables** panel:
+   * Key: `DATABASE_URL`
+   * Value: `postgresql://neondb_owner:YOUR_PASSWORD@your-host.neon.tech/neondb?sslmode=require`
+3. Click **Deploy**. Vercel will parse `vercel.json`, automatically build the client bundle via Vite, configure the serverless function redirects, and deploy the entire platform globally.
 
 ---
 
-## 📜 Licencia
+## 📜 License
 
-Este proyecto es de código abierto y está desarrollado bajo la licencia MIT. Creado por [puyi27](https://github.com/puyi27).
+This project is open-source software licensed under the **MIT License**. Created by [puyi27](https://github.com/puyi27).

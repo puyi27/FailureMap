@@ -181,4 +181,4 @@ FailureMap is fully configured out-of-the-box for production deployments on Verc
 
 ## 📜 License
 
-This project is open-source software licensed under the **MIT License**. Created by [puyi27](https://github.com/puyi27).
+This project is open-source software licensed under the **MIT License**. Created with <3 by [puyi27](https://github.com/puyi27).
